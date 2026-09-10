@@ -54,6 +54,9 @@ dmypy.json
 # Alembic (common with FastAPI, uncomment if migrations shouldn't be tracked)
 # alembic/versions/
 
+# Vector DB data (Chroma, etc.)
+chroma_db/
+
 # ---- Node.js (backend) ----
 node_modules/
 npm-debug.log*
@@ -68,6 +71,10 @@ build/
 
 # Package manager lockfile artifacts (keep one lockfile intentionally, ignore others if unused)
 .npm/
+
+# ---- Mobile (Expo / React Native) ----
+.expo/
+.expo-shared/
 
 # ---- Editors / OS ----
 .vscode/
