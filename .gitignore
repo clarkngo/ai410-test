@@ -1,0 +1,82 @@
+# ---- Python / FastAPI ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Type checkers / linters
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pytype/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Alembic (common with FastAPI, uncomment if migrations shouldn't be tracked)
+# alembic/versions/
+
+# ---- Node.js (backend) ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+dist/
+build/
+.turbo/
+.cache/
+
+# Package manager lockfile artifacts (keep one lockfile intentionally, ignore others if unused)
+.npm/
+
+# ---- Editors / OS ----
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ---- Logs ----
+*.log
+logs/
