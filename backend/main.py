@@ -11,21 +11,11 @@ import os
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 load_dotenv()
 
 app = FastAPI(title="AI 410 — Week 1")
-
-# Don't remove this — the frontend runs from a plain file:// page,
-# which needs CORS enabled to call this API at all.
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 class ChatRequest(BaseModel):
