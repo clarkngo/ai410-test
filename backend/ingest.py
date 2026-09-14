@@ -1,6 +1,8 @@
 """
 Loads the sample docs, chunks + embeds them, and inserts them into the
-documents collection in a local Chroma database — solved in Week 4, unchanged here.
+documents collection in a local Chroma database. This is the same
+chunking/embedding logic from the Week 3 sandbox, now writing to a real
+vector store instead of holding everything in memory.
 
 Run this once before starting the server:  python ingest.py
 """
@@ -17,7 +19,7 @@ load_dotenv()
 
 client = genai.Client()
 EMBED_MODEL = "gemini-embedding-001"
-EMBED_DIM = 1024
+EMBED_DIM = 1024  # must match output_dimensionality below and in retrieval.py
 SAMPLE_DOCS_DIR = os.path.join(os.path.dirname(__file__), "sample_docs")
 CHROMA_PATH = os.path.join(os.path.dirname(__file__), "chroma_db")
 
