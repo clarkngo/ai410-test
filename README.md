@@ -1,43 +1,34 @@
-# HOS 4 Answer Key — Mobile Client, Push & Observability
+# HOS 1 Answer Key — Foundations & the Agentic Loop
 
-Guide: [`../../hos-04-mobile-observability.html`](../../hos-04-mobile-observability.html)
-Starter: [`../../starter-code/hos-04-mobile-observability`](../../starter-code/hos-04-mobile-observability)
+Guide: [`../../hos-01-foundations-agentic-loop.html`](../../hos-01-foundations-agentic-loop.html)
+Starter: [`../../starter-code/hos-01-foundations-agentic-loop`](../../starter-code/hos-01-foundations-agentic-loop)
 
-Reference solution, built on top of HOS 3's guardrailed, async-ingesting RAG app.
+This is a **reference solution**, for SME/instructor verification against a working example — not what students should be given. Unlike the week-by-week starter code, this HOS's starter is a near-blank seed (students scaffold the app themselves with an AI assistant), so there's no single "correct" Create/Scaffold output to diff against. This answer key represents one reasonable result of that stage, plus the Understand & Refine addition and reference notes for the two written stages.
 
 ## What's here
 
-- `backend/devices.py`, `push.py` — device/push-token store and Expo push sending (reused as-is from the mobile/push pattern established earlier in the course).
-- `backend/jobs.py` — ingestion (HOS 3) plus a push notification on completion.
-- `backend/main.py` — adds `POST /register-device`.
-- `backend/retrieval.py`, `agent.py` — traced with Langfuse's `@observe()`, plus `score_faithfulness()` — written **by hand** for Understand & Refine — a lexical-overlap heuristic scoring how much of an answer is actually grounded in the retrieved context, logged against every trace.
-- `mobile/` — the Expo (React Native) client: chat screen, push-permission request, device registration.
-- `EVALUATE.md` / `ANALYZE.md` — reference notes for the two written stages.
+- `backend/` — FastAPI backend with `/chat` (agentic loop) and `/health`. `tools.py` has **two** tools: `calculate` (what a typical Create/Scaffold pass produces) and `word_count` (written by hand, representing Understand & Refine).
+- `frontend/` — Streamlit chat client, same pattern as the rest of the course.
+- `EVALUATE.md` — reference notes on what a genuine Evaluate pass should surface (not a checklist to hand to students).
+- `ANALYZE.md` — a reference walkthrough of the function-call detection logic in `agent.py`, for judging the depth of a student's own explanation.
 
 ## Run it
-
-Needs Redis (from HOS 3) plus a free [Langfuse](https://cloud.langfuse.com) project. The app works without Langfuse keys set — tracing just disables itself with a log line — but you won't see anything in a dashboard until they're configured.
 
 ```bash
 cd backend
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # add GEMINI_API_KEY, REDIS_URL, LANGFUSE_*
-./venv/bin/python ingest.py
-
-# Terminal 1 — API
+cp .env.example .env   # add your GEMINI_API_KEY
 ./venv/bin/uvicorn main:app --reload
-
-# Terminal 2 — worker
-./venv/bin/python worker.py
 ```
 
-Frontend (terminal 3) same as prior HOS units. Mobile (terminal 4):
+In a second terminal:
 
 ```bash
-cd mobile
-npm install
-npx expo start
+cd frontend
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+./venv/bin/streamlit run app.py
 ```
 
-Verified this session: `/health`, RAG-grounded chat, tool calling, `/register-device`, and a full async-ingestion-with-push job — all live, with Langfuse keys unset (confirmed it disables gracefully rather than crashing). `score_faithfulness()` unit-tested against a grounded answer (0.75), a deliberately invented one (0.077), and a plain "I don't know" (1.0 — nothing to check).
+Try a message that needs the calculator ("what's 342 times 87?"), one that needs word counting ("how many words are in 'the quick brown fox jumps'?"), and one that needs neither — confirm the agent only calls a tool when it actually helps.

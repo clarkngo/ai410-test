@@ -1,13 +1,17 @@
 # Reference: Evaluate stage
 
+What a strong Evaluate write-up should surface, for comparing against a student's submission. This isn't a checklist to hand to students verbatim — it's what a genuine test pass tends to turn up.
+
 ## Things a typical AI-scaffolded first pass gets right
-- `POST /register-device` stores a token keyed by `device_id`, not by user — reasonable given there's no auth system in this course.
-- `@observe()` on `run_agent` and `retrieve` produces two separate spans per request, not one merged one.
+- The backend holds `GEMINI_API_KEY`, never the frontend — a reasonable default even without being asked.
+- `/chat` returns JSON with a `reply` field, matching what the frontend expects.
+- The agent answers a plain question ("what's the capital of France?") without calling any tool.
 
-## Things worth specifically testing
-- **A push notification actually arrives on the registered device**, not just that the API call succeeds. `send_push_notification()`'s `response.raise_for_status()` only catches HTTP-level failures — Expo's push API can return **200 OK with an error in the response body** (e.g. `DeviceNotRegistered` for a stale or fake token). A submission that only checks the HTTP status hasn't actually verified delivery.
-- **A trace in the Langfuse dashboard for a real request** — does it show retrieval and generation as separate spans, or one flat call? Can you find the token/cost numbers and latency for each?
-- **The faithfulness score on an answer you know is wrong** — deliberately ask something the docs don't cover and see what the model does; if it hallucinates instead of saying "I don't know," does the logged faithfulness score reflect that (low), or does the heuristic miss it?
-- **Whether tracing/scoring measurably slows down `/chat`** — time a request with and without `LANGFUSE_*` keys set. A heavy synchronous tracing setup can add noticeable latency; Langfuse's SDK is supposed to batch/flush asynchronously, but it's worth actually timing rather than assuming.
+## Things worth specifically testing, and what commonly goes wrong
+- **A message that clearly needs the tool** (e.g. "what's 342 times 87?") — does the agent actually call `calculate`, or does it try to compute the answer itself in text and get it wrong? A scaffolded loop that doesn't check `step.type == "function_call"` correctly will silently skip the tool and just guess.
+- **A message that's ambiguous** ("what's 342 times 87, roughly?") — some scaffolds call the tool anyway, some don't. Neither is "wrong," but the student should notice and say which happened.
+- **An expression the calculator can't handle** (e.g. `"342 * "`, incomplete) — a naive `eval()`-based first pass will crash the whole request instead of returning a graceful error. This is the single most common gap in a fast AI-scaffolded `calculate` tool, and worth calling out explicitly if the student's build has it.
+- **`MAX_TURNS` / loop termination** — ask what happens if the model calls a tool, gets a result, and calls a *different* tool in response, repeatedly. Does the loop actually stop after 5 turns, or does it hang? Most scaffolds get the happy path right and never test this.
+- **Empty/whitespace-only message** — does the backend 500, or does it get a sensible (if unhelpful) reply?
 
-Note: `LANGFUSE_PUBLIC_KEY`/`LANGFUSE_SECRET_KEY` unset doesn't break anything — the SDK disables itself with a log line and the app keeps working. That's a legitimate thing for a student to discover and report, not a bug to "fix" by making tracing mandatory.
+A submission that only tests the happy path hasn't actually evaluated anything — it's re-confirmed the demo works. Look for evidence the student tried to break it.
