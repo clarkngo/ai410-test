@@ -1,6 +1,6 @@
 """
-Job functions the worker runs. Self-contained (not importing from
-ingest.py) since this module runs in a separate worker process.
+Job functions the worker runs. Ingestion (HOS 3) is unchanged; this
+HOS adds a push notification when it finishes.
 """
 
 import os
@@ -10,9 +10,10 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-load_dotenv()  # main.py imports this module before calling load_dotenv()
-                # itself, so this module needs its own env vars loaded
-                # before constructing the client below.
+from devices import get_push_token
+from push import send_push_notification
+
+load_dotenv()
 client = genai.Client()
 EMBED_MODEL = "gemini-embedding-001"
 EMBED_DIM = 1024
@@ -30,7 +31,7 @@ def chunk_text(text: str, chunk_size: int = 400, overlap: int = 50) -> list[str]
     return chunks
 
 
-def ingest_document_job(doc_path: str) -> dict:
+def ingest_document_job(doc_path: str, device_id: str | None = None) -> dict:
     with open(doc_path) as f:
         text = f.read()
 
@@ -54,5 +55,14 @@ def ingest_document_job(doc_path: str) -> dict:
         documents=chunks,
         metadatas=[{"source": source} for _ in chunks],
     )
+
+    if device_id:
+        token = get_push_token(device_id)
+        if token:
+            send_push_notification(
+                token,
+                title="Document ready",
+                body=f"Finished processing {os.path.basename(doc_path)}.",
+            )
 
     return {"chunks_inserted": len(chunks)}

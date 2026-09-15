@@ -1,6 +1,7 @@
 """
-Retrieval for the RAG pipeline: embed the incoming query, then find
-the closest chunks in the documents collection by vector distance.
+Retrieval for the RAG pipeline — solved since HOS 2. Traced as its own
+step, separate from the main agent call, so it shows up as a distinct
+span in the Langfuse dashboard.
 """
 
 import os
@@ -9,15 +10,17 @@ import chromadb
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from langfuse.decorators import observe
 
 load_dotenv()
 
 client = genai.Client()
 EMBED_MODEL = "gemini-embedding-001"
-EMBED_DIM = 1024  # must match output_dimensionality in ingest.py
+EMBED_DIM = 1024
 CHROMA_PATH = os.path.join(os.path.dirname(__file__), "chroma_db")
 
 
+@observe()
 def retrieve(query: str, k: int = 5) -> list[str]:
     result = client.models.embed_content(
         model=EMBED_MODEL,

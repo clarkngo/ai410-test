@@ -1,11 +1,14 @@
 """
-HOS 2's RAG + tool-calling loop, extended with a guardrail around the
-`calculate` tool's arguments — nondeterministic model output gets
-validated and retried instead of crashing or silently misbehaving.
+HOS 3's guardrailed RAG + tool-calling loop, traced end to end, with a
+faithfulness score logged on every call — the by-hand Understand &
+Refine piece for this HOS.
 """
+
+import re
 
 from dotenv import load_dotenv
 from google import genai
+from langfuse.decorators import langfuse_context, observe
 
 from guardrails import CalculateArgs, WordCountArgs, call_with_guardrail
 from retrieval import retrieve
@@ -16,7 +19,35 @@ client = genai.Client()
 MODEL = "gemini-flash-latest"
 MAX_TURNS = 5
 
+_STOPWORDS = {
+    "the", "a", "an", "is", "are", "was", "were", "to", "of", "and", "or",
+    "in", "on", "for", "at", "your", "you", "it", "this", "that", "be",
+    "as", "with", "by", "from", "i", "don't", "know",
+}
 
+
+def score_faithfulness(answer: str, context: str) -> float:
+    """
+    Added by hand for Understand & Refine — a simple heuristic RAG
+    evaluation. Scores what fraction of the "significant" words in
+    the answer (lowercased, punctuation stripped, stopwords removed)
+    also appear somewhere in the retrieved context. Not a substitute
+    for a real judge model, but cheap, deterministic, and enough to
+    flag an answer that's drifting away from what was actually
+    retrieved — e.g. a plain "I don't know" scores 0/0 and is treated
+    as trivially faithful (nothing to check), while an answer padded
+    with specifics the context never mentioned scores low.
+    """
+    answer_words = {w for w in re.findall(r"[a-z0-9']+", answer.lower()) if w not in _STOPWORDS}
+    if not answer_words:
+        return 1.0
+
+    context_words = set(re.findall(r"[a-z0-9']+", context.lower()))
+    grounded = answer_words & context_words
+    return round(len(grounded) / len(answer_words), 3)
+
+
+@observe()
 def run_agent(user_message: str) -> str:
     chunks = retrieve(user_message, k=5)
     context = "\n\n".join(chunks)
@@ -41,7 +72,13 @@ def run_agent(user_message: str) -> str:
         function_calls = [step for step in interaction.steps if step.type == "function_call"]
 
         if not function_calls:
-            return interaction.output_text
+            answer = interaction.output_text
+            score = score_faithfulness(answer, context)
+            try:
+                langfuse_context.score_current_observation(name="faithfulness", value=score)
+            except Exception:
+                pass  # no-op if there's no active Langfuse trace (e.g. keys not configured)
+            return answer
 
         results = []
         for call in function_calls:
@@ -54,7 +91,7 @@ def run_agent(user_message: str) -> str:
                 result = (
                     fn(**validated.model_dump())
                     if isinstance(validated, CalculateArgs)
-                    else validated  # the {"error": ...} dict from the guardrail
+                    else validated
                 )
             elif call.name == "word_count":
                 validated = call_with_guardrail(lambda: call.arguments, WordCountArgs)

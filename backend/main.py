@@ -1,11 +1,9 @@
 """
-HOS 3 answer key: Guardrails & Asynchronous Processing.
+HOS 4 answer key: Mobile Client, Push & Observability.
 
-Chat (with RAG + guardrails) is unchanged in shape from HOS 1-2. This
-HOS adds document upload as a background job instead of blocking the
-request, plus a status endpoint to poll it.
-
-Remember: run the worker in a SEPARATE terminal — python worker.py
+Everything from HOS 1-3 (chat, RAG, guardrails, async ingestion) is
+unchanged in shape. This HOS adds device registration for push
+notifications and traces every request end to end.
 """
 
 from dotenv import load_dotenv
@@ -14,12 +12,13 @@ from pydantic import BaseModel
 from rq.job import Job
 
 from agent import run_agent
+from devices import register_push_token
 from jobs import ingest_document_job
 from queue_setup import queue, redis_conn
 
 load_dotenv()
 
-app = FastAPI(title="AI 410 — HOS 3")
+app = FastAPI(title="AI 410 — HOS 4")
 
 
 class ChatRequest(BaseModel):
@@ -31,7 +30,13 @@ class ChatResponse(BaseModel):
 
 
 class UploadRequest(BaseModel):
-    doc_path: str  # path to a file already on the server for this exercise
+    doc_path: str
+    device_id: str | None = None
+
+
+class RegisterDeviceRequest(BaseModel):
+    device_id: str
+    push_token: str
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -41,7 +46,7 @@ def chat(body: ChatRequest) -> ChatResponse:
 
 @app.post("/documents")
 def upload_document(body: UploadRequest):
-    job = queue.enqueue(ingest_document_job, body.doc_path)
+    job = queue.enqueue(ingest_document_job, body.doc_path, body.device_id)
     return {"job_id": job.id}
 
 
@@ -49,6 +54,12 @@ def upload_document(body: UploadRequest):
 def job_status(job_id: str):
     job = Job.fetch(job_id, connection=redis_conn)
     return {"status": job.get_status(), "result": job.result}
+
+
+@app.post("/register-device")
+def register_device(body: RegisterDeviceRequest):
+    register_push_token(body.device_id, body.push_token)
+    return {"status": "registered"}
 
 
 @app.get("/health")
