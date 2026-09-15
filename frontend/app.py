@@ -3,8 +3,7 @@ AI 410 — frontend chat client (Streamlit).
 
 Talks to the local FastAPI backend over HTTP, server-side — this runs
 as its own Python process, not JavaScript in the browser, so there's
-no CORS involved. Change API_BASE if you deploy the backend elsewhere
-(see the Week 10 guide).
+no CORS involved.
 """
 
 import requests
@@ -12,8 +11,8 @@ import streamlit as st
 
 API_BASE = "http://127.0.0.1:8000"
 
-st.set_page_config(page_title="AI 410 — Chat")
-st.title("AI 410 — Chat")
+st.set_page_config(page_title="Chat")
+st.title("Chat")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []

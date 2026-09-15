@@ -1,38 +1,43 @@
-# Week 4 Answer Key — Vector Databases & RAG Pipelines
+# HOS 4 Answer Key — Mobile Client, Push & Observability
 
-Guide: [`../../week-04-vector-db-rag.html`](../../week-04-vector-db-rag.html)
-Starter: [`../../starter-code/week-04-vector-db-rag`](../../starter-code/week-04-vector-db-rag)
+Guide: [`../../hos-04-mobile-observability.html`](../../hos-04-mobile-observability.html)
+Starter: [`../../starter-code/hos-04-mobile-observability`](../../starter-code/hos-04-mobile-observability)
 
-This is the **fully solved** version of Week 4 — everything a student
-would build is already filled in, for SME/instructor verification
-against a working reference. It's not what students should be given.
+Reference solution, built on top of HOS 3's guardrailed, async-ingesting RAG app.
 
-## What's solved here (vs. the starter)
+## What's here
 
-1. `backend/retrieval.py` — `retrieve()` embeds the query (`task_type="RETRIEVAL_QUERY"`), queries the local Chroma `documents` collection for the k nearest chunks, and returns their text. The starter leaves this raising `NotImplementedError`.
-2. `backend/agent.py` — `run_agent()` calls `retrieve()`, joins the chunks into a `system_instruction`, and passes it on both `interactions.create()` calls (the initial one and the one inside the tool-call loop). The starter leaves this commented out.
-
-Weeks 1-2's agent loop and tool calling, and `backend/ingest.py`, were already complete in the starter and are unchanged here.
+- `backend/devices.py`, `push.py` — device/push-token store and Expo push sending (reused as-is from the mobile/push pattern established earlier in the course).
+- `backend/jobs.py` — ingestion (HOS 3) plus a push notification on completion.
+- `backend/main.py` — adds `POST /register-device`.
+- `backend/retrieval.py`, `agent.py` — traced with Langfuse's `@observe()`, plus `score_faithfulness()` — written **by hand** for Understand & Refine — a lexical-overlap heuristic scoring how much of an answer is actually grounded in the retrieved context, logged against every trace.
+- `mobile/` — the Expo (React Native) client: chat screen, push-permission request, device registration.
+- `EVALUATE.md` / `ANALYZE.md` — reference notes for the two written stages.
 
 ## Run it
 
-No database setup step this week — Chroma creates `backend/chroma_db/` the first time `ingest.py` runs, right there on disk.
+Needs Redis (from HOS 3) plus a free [Langfuse](https://cloud.langfuse.com) project. The app works without Langfuse keys set — tracing just disables itself with a log line — but you won't see anything in a dashboard until they're configured.
 
-**Recommended: GitHub Codespaces.** Push this folder to its own repo, then **Code → Codespaces → Create codespace on main** — `.devcontainer/devcontainer.json` installs `backend/requirements.txt` and creates `backend/.env` automatically. Add your `GEMINI_API_KEY` to `backend/.env`, then:
-```bash
-cd backend
-python ingest.py          # load the sample docs into your local vector DB
-uvicorn main:app --reload
-```
-
-**Running locally instead?**
 ```bash
 cd backend
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # add your GEMINI_API_KEY
+cp .env.example .env   # add GEMINI_API_KEY, REDIS_URL, LANGFUSE_*
 ./venv/bin/python ingest.py
+
+# Terminal 1 — API
 ./venv/bin/uvicorn main:app --reload
+
+# Terminal 2 — worker
+./venv/bin/python worker.py
 ```
 
-Either way, ask something that can only be answered from the sample docs (e.g. "how long do I have to return an item?") and confirm the agent gets it right using retrieved context. Then comment out the retrieval call and ask again — it should get noticeably worse.
+Frontend (terminal 3) same as prior HOS units. Mobile (terminal 4):
+
+```bash
+cd mobile
+npm install
+npx expo start
+```
+
+Verified this session: `/health`, RAG-grounded chat, tool calling, `/register-device`, and a full async-ingestion-with-push job — all live, with Langfuse keys unset (confirmed it disables gracefully rather than crashing). `score_faithfulness()` unit-tested against a grounded answer (0.75), a deliberately invented one (0.077), and a plain "I don't know" (1.0 — nothing to check).
