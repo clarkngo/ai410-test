@@ -1,34 +1,21 @@
-# HOS 1 Answer Key — Foundations & the Agentic Loop
+# HOS 1 — Foundations & the Agentic Loop
 
 Guide: [`../../hos-01-foundations-agentic-loop.html`](https://clarkngo.github.io/stc-transformation/courses/ai-410-guides/hos-01-foundations-agentic-loop.html)
-Starter: [`../../starter-code/hos-01-foundations-agentic-loop`](../../starter-code/hos-01-foundations-agentic-loop)
 
-This is a **reference solution**, for SME/instructor verification against a working example — not what students should be given. Unlike the week-by-week starter code, this HOS's starter is a near-blank seed (students scaffold the app themselves with an AI assistant), so there's no single "correct" Create/Scaffold output to diff against. This answer key represents one reasonable result of that stage, plus the Understand & Refine addition and reference notes for the two written stages.
+## This folder is (almost) empty on purpose
 
-## What's here
+Every other week's starter code in this course hands you a working scaffold with one piece stubbed in. This HOS is different: **you build the scaffold yourself, with an AI coding assistant** — that's the first graded stage (Create/Scaffold). Handing you pre-built code would skip the part you're actually being assessed on.
 
-- `backend/` — FastAPI backend with `/chat` (agentic loop) and `/health`. `tools.py` has **two** tools: `calculate` (what a typical Create/Scaffold pass produces) and `word_count` (written by hand, representing Understand & Refine).
-- `frontend/` — Streamlit chat client, same pattern as the rest of the course.
-- `EVALUATE.md` — reference notes on what a genuine Evaluate pass should surface (not a checklist to hand to students).
-- `ANALYZE.md` — a reference walkthrough of the function-call detection logic in `agent.py`, for judging the depth of a student's own explanation.
+What's here:
+- `.devcontainer/devcontainer.json` — a ready Python 3.12 Codespace, so environment setup isn't part of what you're solving.
+- `backend/.env.example` — copy to `backend/.env` once you have a backend folder, and add your key there.
 
-## Run it
+Nothing else. No `main.py`, no `requirements.txt`, no frontend.
 
-```bash
-cd backend
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env   # add your GEMINI_API_KEY
-./venv/bin/uvicorn main:app --reload
-```
+## What you'll build
 
-In a second terminal:
+A full-stack chat app — a FastAPI backend that calls Gemini, and a Streamlit frontend — extended with an agentic loop that can call at least one real tool (e.g. a calculator). Follow the guide's four stages: **Create/Scaffold → Evaluate → Analyze → Understand & Refine.**
 
-```bash
-cd frontend
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-./venv/bin/streamlit run app.py
-```
+Get a free Gemini API key (no credit card required) at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) before you start — your AI assistant will need somewhere to put it.
 
-Try a message that needs the calculator ("what's 342 times 87?"), one that needs word counting ("how many words are in 'the quick brown fox jumps'?"), and one that needs neither — confirm the agent only calls a tool when it actually helps.
+See the guide for the full walkthrough, including a starter prompt for Create/Scaffold and exactly what to submit for each stage.
